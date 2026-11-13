@@ -75,10 +75,54 @@ def validate_alerts(alerts):
             valid.append(alert)
     return valid, rejected
 
+def classify_severity(level):
+    """Convert a Wazuh-like rule level (0-15) into a severity label."""
+    if level >= 12:
+        return "critical"
+    if level >= 8:
+        return "high"
+    if level >= 4:
+        return "medium"
+    return "low"
+
+
+def normalize_alert(alert):
+    """Turn one validated, nested alert into a flat dictionary
+    that every other module can use."""
+    level = alert["rule"]["level"]
+    return {
+        "alert_id": alert["id"],
+        "timestamp": datetime.fromisoformat(alert["timestamp"]),
+        "source_ip": alert["data"]["srcip"],
+        "destination_ip": alert["data"]["dstip"],
+        "rule_id": alert["rule"]["id"],
+        "description": alert["rule"]["description"],
+        "level": level,
+        "severity": classify_severity(level),
+        "agent_name": get_field(alert, ("agent", "name")),
+        "username": get_field(alert, ("data", "dstuser")),
+        "destination_port": get_field(alert, ("data", "dstport")),
+        "full_log": alert.get("full_log"),
+    }
+
+
+def process_alerts(path):
+    """Full Module 1 pipeline: load -> validate -> normalize.
+    Return (normalized_alerts, rejected)."""
+    raw_alerts = load_alerts(path)
+    valid, rejected = validate_alerts(raw_alerts)
+    normalized = [normalize_alert(alert) for alert in valid]
+    return normalized, rejected
+
 
 if __name__ == "__main__":
-    alerts = load_alerts("data/alerts.json")
-    valid, rejected = validate_alerts(alerts)
-    print(f"Loaded: {len(alerts)} | Valid: {len(valid)} | Rejected: {len(rejected)}")
-    for item in rejected:
-        print(item)
+    import pandas as pd
+
+    alerts, rejected = process_alerts("data/alerts.json")
+    print(f"Processed: {len(alerts)} | Rejected: {len(rejected)}\n")
+
+    table = pd.DataFrame(alerts)
+    columns = ["alert_id", "timestamp", "source_ip", "destination_ip", "level", "severity"]
+    print(table[columns].to_string(index=False))
+    print()
+    print(table["severity"].value_counts().to_string())
