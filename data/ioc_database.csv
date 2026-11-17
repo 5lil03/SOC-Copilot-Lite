@@ -1,0 +1,6 @@
+ip,threat_category,description,confidence,source
+203.0.113.45,ssh_bruteforce,Synthetic entry: source of repeated SSH password guessing,high,synthetic-lab-feed
+198.51.100.23,port_scanner,Synthetic entry: host probing many ports in a short time,medium,synthetic-lab-feed
+192.0.2.10,malware_c2,Synthetic entry: command-and-control server used in lab examples,high,synthetic-lab-feed
+198.51.100.77,phishing_host,Synthetic entry: host serving a fake login page in lab examples,medium,synthetic-lab-feed
+203.0.113.150,scanner,Synthetic entry: low-confidence mass scanning reported in lab examples,low,synthetic-lab-feed
